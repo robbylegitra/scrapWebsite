@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal E-Proc PLNI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e0f7fa; /* Warna lembut */
+            margin: 0;
+            padding: 20px;
+            background-image: url('https://example.com/hutan-background.jpg'); /* Ganti dengan URL gambar hutan */
+            background-size: cover;
+            color: #2e7d32; /* Warna hijau */
+        }
+        h1 {
+            text-align: center;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        li {
+            background-color: rgba(255, 255, 255, 0.8); /* Latar belakang semi-transparan */
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        a {
+            text-decoration: none;
+            color: #2e7d32; /* Warna hijau */
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: #1b5e20; /* Warna hijau lebih gelap saat hover */
+        }
+        .description {
+            font-size: 0.9em;
+            color: #555; /* Warna deskripsi */
+        }
+    </style>
+</head>
+<body>
+    <h1>Portal E-Proc PLNI</h1>
+    <ul>
+        {% for article in articles %}
+            <li>
+                <a href="{{ article.link }}" target="_blank">{{ article.title }}</a>
+                {% if article.description %}
+                    <p class="description">{{ article.description }}</p>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

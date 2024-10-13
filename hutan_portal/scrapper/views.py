@@ -25,13 +25,17 @@ def scrape_articles(request):
 
         if post_list:
             # Get all h3 elements for unique articles
-            for item in post_list.find_all('h3'):
-                title = item.text.strip()
+            for item in post_list.find_all('article'):  # Assuming each article is wrapped in an <article> tag
+                title = item.find('h3').text.strip()
                 link = item.find('a')['href']
                 full_link = urljoin(base_url, link)
+
+                # Extract post date - Adjust the selector as per the site's structure
+                post_date = item.find(class_='post__date').text.strip() if item.find(class_='post__date') else 'No date available'
+
                 # Ensure no duplicate articles
                 if full_link not in [article['link'] for article in total_articles]:
-                    total_articles.append({'title': title, 'link': full_link})
+                    total_articles.append({'title': title, 'link': full_link, 'post_date': post_date})
         else:
             break  # Stop if no content found
 
@@ -43,10 +47,10 @@ def scrape_articles(request):
         response['Content-Disposition'] = 'attachment; filename="articles.csv"'
 
         writer = csv.writer(response)
-        writer.writerow(['Title', 'Link'])  # Write CSV header
+        writer.writerow(['Title', 'Link', 'Post Date'])  # Write CSV header
 
         for article in total_articles:
-            writer.writerow([article['title'], article['link']])  # Write each article
+            writer.writerow([article['title'], article['link'], article['post_date']])  # Write each article
 
         return response  # Return the CSV response
 

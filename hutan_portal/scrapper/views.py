@@ -1,33 +1,58 @@
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+from django.core.paginator import Paginator
 from django.shortcuts import render
-
+from django.http import HttpResponse
+import csv
 
 def scrape_articles(request):
     base_url = 'https://plniconplus.co.id/e-proc/'
-    articles = []
-    page_number = 1
-    max_pages = 5  # Atur jumlah halaman yang ingin diambil
+    total_articles = []
+    articles_per_page = 20  # Number of articles per page
 
-    while page_number <= max_pages:
-        url = f"{base_url}?page={page_number}"
+    # Fetch articles from all pages
+    page_number = 1
+    while True:
+        url = f"{base_url}page/{page_number}/" if page_number > 1 else base_url
         response = requests.get(url)
 
         if response.status_code != 200:
-            break  # Berhenti jika tidak ada lagi halaman yang tersedia
+            break  # Stop if no more pages are available
 
         soup = BeautifulSoup(response.text, 'html.parser')
         post_list = soup.select_one('.post-list')
 
-        if not post_list:
-            break  # Berhenti jika tidak ada post-list
+        if post_list:
+            # Get all h3 elements for unique articles
+            for item in post_list.find_all('h3'):
+                title = item.text.strip()
+                link = item.find('a')['href']
+                full_link = urljoin(base_url, link)
+                # Ensure no duplicate articles
+                if full_link not in [article['link'] for article in total_articles]:
+                    total_articles.append({'title': title, 'link': full_link})
+        else:
+            break  # Stop if no content found
 
-        # Mengambil semua elemen h3
-        for item in post_list.find_all('h3'):
-            title = item.text.strip()
-            link = item.find('a')['href']
-            articles.append({'title': title, 'link': link})
+        page_number += 1  # Go to the next page
 
-        page_number += 1  # Naik ke halaman berikutnya
+    # Check if the request is for CSV download
+    if request.GET.get('download') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="articles.csv"'
 
-    return render(request, 'scrapper/index.html', {'articles': articles})
+        writer = csv.writer(response)
+        writer.writerow(['Title', 'Link'])  # Write CSV header
+
+        for article in total_articles:
+            writer.writerow([article['title'], article['link']])  # Write each article
+
+        return response  # Return the CSV response
+
+    # Create paginator
+    paginator = Paginator(total_articles, articles_per_page)  # 20 articles per page
+    page_number = request.GET.get('page')  # Get page number from query parameter
+    articles_page = paginator.get_page(page_number)  # Get articles for the page
+
+    return render(request, 'scrapper/index.html', {'articles': articles_page})

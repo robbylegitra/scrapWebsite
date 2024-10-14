@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.12
 
 # Install dependencies untuk Chrome dan ChromeDriver
 RUN apt-get update && apt-get install -y \
@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y \
     && wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get install -y ./google-chrome-stable_current_amd64.deb \
     && rm google-chrome-stable_current_amd64.deb \
-    && pip install --no-cache-dir django selenium \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

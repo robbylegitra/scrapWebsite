@@ -7,8 +7,7 @@ from django.http import HttpResponse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import random
 import time
 import csv
 
@@ -71,18 +70,22 @@ def scrape_articles(request):
 # Scraping function for LPSE LKPP with Selenium (Headless)
 def lelang_lkpp(request):
     options = Options()
-    options.headless = True
+    options.add_argument('--headless')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
-    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-
+    # A pool of user agents
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    ]
+    options.add_argument(f"user-agent={random.choice(user_agents)}")
     driver = webdriver.Chrome(options=options)
+    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     driver.get('https://lpse.lkpp.go.id/eproc4/lelang')
 
     # Wait for the page to load
-    WebDriverWait(driver, 100).until(
-        EC.presence_of_element_located((By.ID, 'tbllelang_wrapper'))
-    )
+    time.sleep(random.uniform(3, 5))
 
     lelang_data = []
     # Use By.ID instead of find_element_by_id
@@ -106,18 +109,16 @@ def lelang_lkpp(request):
                         'tahapan': cols[3] if len(cols) > 3 else '',
                         'hps': cols[4] if len(cols) > 4 else '',
                     })
-             # Wait for the pagination section to load
-            WebDriverWait(driver, 100).until(
-                EC.presence_of_element_located((By.ID, 'tbllelang_paginate'))
-            )
 
             # Check for pagination
             pagination = driver.find_element(By.ID, 'tbllelang_paginate')
             next_button = pagination.find_element(By.LINK_TEXT, 'Berikutnya')
 
             if next_button:
-                next_button.click()  # Click the "Next" button
-                time.sleep(3)  # Wait for the page to load
+                # Simulate mouse movement (hover) before clicking
+                webdriver.ActionChains(driver).move_to_element(next_button).perform()
+                next_button.click()
+                time.sleep(random.uniform(2, 4))  # Randomized wait time
             else:
                 break  # No more pages
 

@@ -16,9 +16,13 @@ Including another URLconf
 """
 
 from django.urls import path
+from scrapper.views import home_page
+from scrapper.views import lelang_lkpp
 from scrapper.views import scrape_articles
 
 urlpatterns = [
-    path('', scrape_articles, name='scrape_articles'),
+    path('', home_page, name='home_page'),
+    path('lelang-lkpp/', lelang_lkpp, name='lelang_lkpp'),
+    path('pln-icon-plus/', scrape_articles, name='scrape_articles'),
 ]
 

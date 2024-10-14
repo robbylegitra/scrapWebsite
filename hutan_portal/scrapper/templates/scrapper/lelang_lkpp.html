@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lelang LKPP</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e8f5e9; /* Warna hijau muda */
+            margin: 0;
+            padding: 20px;
+            color: #4e342e; /* Warna coklat */
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            color: #1b5e20; /* Warna hijau gelap */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+        .article-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .article-item {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            width: calc(30% - 20px); /* Set width of items */
+            min-width: 250px;
+            max-width: 300px;
+            transition: transform 0.2s; /* Add smooth transition */
+        }
+        .article-item:hover {
+            transform: translateY(-5px); /* Slight lift on hover */
+        }
+        a {
+            text-decoration: none;
+            color: #388e3c; /* Warna hijau */
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        a:hover {
+            text-decoration: underline;
+            color: #1b5e20; /* Warna hijau gelap */
+        }
+        .pagination {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .pagination a {
+            margin: 0 5px;
+            text-decoration: none;
+            color: #4e342e; /* Warna coklat */
+            border: 1px solid #4e342e; /* Warna coklat */
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .pagination a:hover {
+            background-color: #4e342e; /* Coklat saat hover */
+            color: white; /* Teks putih saat hover */
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #6d4c41; /* Warna coklat tua */
+        }
+    </style>
+</head>
+<body>
+    <h1>Daftar Lelang LKPP</h1>
+
+    <div class="article-list">
+        {% for lelang in lkpp_lelang %}
+            <div class="article-item">
+                <a href="{{ lelang.link }}" target="_blank">{{ lelang.nama_paket }}</a>
+                <div>Kode Lelang: {{ lelang.kode_lelang }}</div>
+                <div>Instansi: {{ lelang.instansi }}</div>
+                <a href="{{ lelang.link }}" target="_blank">{{ lelang.tahapan }}</a>
+                <div>HPS: {{ lelang.hps }}</div>
+            </div>
+        {% empty %}
+            <p>No lelang found.</p>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        <span class="step-links">
+            {% if lkpp_lelang.has_previous %}
+                <a href="?page=1">&laquo; pertama</a>
+                <a href="?page={{ lkpp_lelang.previous_page_number }}">sebelumnya</a>
+            {% endif %}
+
+            <span class="current">
+                Halaman {{ lkpp_lelang.number }} dari {{ lkpp_lelang.paginator.num_pages }}.
+            </span>
+
+            {% if lkpp_lelang.has_next %}
+                <a href="?page={{ lkpp_lelang.next_page_number }}">selanjutnya</a>
+                <a href="?page={{ lkpp_lelang.paginator.num_pages }}">terakhir &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="footer">
+        &copy; 2024 Lelang LKPP. Semua hak dilindungi.
+    </div>
+</body>
+</html>

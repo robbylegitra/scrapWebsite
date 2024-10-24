@@ -81,7 +81,7 @@ DATABASES = {
         'NAME': 'portal_pln',
         'USER': 'root',  # Use the username created above
         'PASSWORD': '',  # No password
-        'HOST': 'localhost',
+        'HOST': '10.10.11.19',
         'PORT': '3306',
     }
 }

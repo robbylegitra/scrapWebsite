@@ -1,18 +1,21 @@
 import requests
+import threading
+import random
+import time
+import csv
 from bs4 import BeautifulSoup
 from .models import Article
 from .models import Lelang
 from urllib.parse import urljoin
 from django.core.paginator import Paginator
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from django.shortcuts import render
 from django.http import HttpResponse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-import threading
-import random
-import time
-import csv
+
 
 
 # Define a function to handle the scraping in a separate thread
@@ -132,8 +135,17 @@ def scrape_data_lpse():
                         'hps': cols[4],
                     })
 
-            pagination = driver.find_element(By.ID, 'tbllelang_paginate')
-            next_button = pagination.find_element(By.LINK_TEXT, 'Berikutnya')
+            next_button = driver.find_element(By.CSS_SELECTOR, ".pagination .next")
+            # Tunggu hingga tombol "Next" dapat diklik
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".pagination .next")))
+
+            # Gulir ke tombol "Next"
+            driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
+
+            # Klik tombol next dengan JavaScript
+            driver.execute_script("arguments[0].click();", next_button)
+
+            time.sleep(5)
 
             if next_button:
                 webdriver.ActionChains(driver).move_to_element(next_button).perform()

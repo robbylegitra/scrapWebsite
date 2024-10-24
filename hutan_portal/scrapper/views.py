@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from .models import Article
+from .models import Lelang
 from urllib.parse import urljoin
 from django.core.paginator import Paginator
 from django.shortcuts import render
@@ -95,59 +96,51 @@ def scrape_articles(request):
 
 
 # Scraping function for LPSE LKPP with Selenium (Headless)
-def lelang_lkpp(request):
+def scrape_data_lpse():
+    # Kode scraping yang sama seperti sebelumnya
     options = Options()
     options.add_argument('--headless')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
-    # A pool of user agents
+
     user_agents = [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0",
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0"
     ]
     options.add_argument(f"user-agent={random.choice(user_agents)}")
     driver = webdriver.Chrome(options=options)
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     driver.get('https://lpse.lkpp.go.id/eproc4/lelang')
-
-    # Wait for the page to load
     time.sleep(random.uniform(3, 5))
 
     lelang_data = []
-    # Use By.ID instead of find_element_by_id
     while True:
         try:
-            # Find table on the page
             table = driver.find_element(By.ID, 'tbllelang_wrapper')
             rows = table.find_elements(By.TAG_NAME, 'tr')
 
-            # Extract data from each row
-            for row in rows[1:]:  # Skip the header row
+            for row in rows[1:]:
                 cols = row.find_elements(By.TAG_NAME, 'td')
                 cols = [col.text.strip() for col in cols]
 
                 if len(cols) > 0:
                     lelang_data.append({
-                        'kode_lelang': cols[0] if len(cols) > 0 else '',
-                        'nama_paket': cols[1] if len(cols) > 1 else '',
-                        'link': row.find_element(By.TAG_NAME, 'a').get_attribute('href') if len(cols) > 1 else '',
-                        'instansi': cols[2] if len(cols) > 2 else '',
-                        'tahapan': cols[3] if len(cols) > 3 else '',
-                        'hps': cols[4] if len(cols) > 4 else '',
+                        'kode_lelang': cols[0],
+                        'nama_paket': cols[1],
+                        'link': row.find_element(By.TAG_NAME, 'a').get_attribute('href'),
+                        'instansi': cols[2],
+                        'tahapan': cols[3],
+                        'hps': cols[4],
                     })
 
-            # Check for pagination
             pagination = driver.find_element(By.ID, 'tbllelang_paginate')
             next_button = pagination.find_element(By.LINK_TEXT, 'Berikutnya')
 
             if next_button:
-                # Simulate mouse movement (hover) before clicking
                 webdriver.ActionChains(driver).move_to_element(next_button).perform()
                 next_button.click()
-                time.sleep(random.uniform(2, 4))  # Randomized wait time
+                time.sleep(random.uniform(2, 4))
             else:
-                break  # No more pages
+                break
 
         except Exception as e:
             print(f"Error: {e}")
@@ -155,9 +148,34 @@ def lelang_lkpp(request):
 
     driver.quit()
 
-    paginator = Paginator(lelang_data, 6)  # 6 items per page
-    page_number = request.GET.get('page')
-    lelang_data = paginator.get_page(page_number)
+    # Simpan atau update data ke database
+    for item in lelang_data:
+        Lelang.objects.update_or_create(
+            kode_lelang=item['kode_lelang'],
+            defaults={
+                'nama_paket': item['nama_paket'],
+                'link': item['link'],
+                'instansi': item['instansi'],
+                'tahapan': item['tahapan'],
+                'hps': item['hps'],
+            }
+        )
+
+
+def lelang_lkpp(request):
+    # Ambil data dari database
+    lelang_data = Lelang.objects.all()
+
+    if not lelang_data.exists():
+        # Jika tidak ada data, mulai scraping
+        threading.Thread(target=scrape_data_lpse).start()
+    else:
+        # Jika ada data, tampilkan terlebih dahulu
+        paginator = Paginator(lelang_data, 6)
+        page_number = request.GET.get('page')
+        lelang_data = paginator.get_page(page_number)
+        # Mulai scraping di background
+        threading.Thread(target=scrape_data_lpse).start()
 
     return render(request, 'scrapper/lelang_lkpp.html', {'lkpp_lelang': lelang_data})
 

@@ -9,3 +9,15 @@ class Article(models.Model):
 
     def __str__(self):
         return self.title
+
+class Lelang(models.Model):
+    kode_lelang = models.CharField(max_length=500)
+    nama_paket = models.CharField(max_length=500)
+    link = models.URLField(max_length=500)
+    instansi = models.CharField(max_length=500)
+    tahapan = models.CharField(max_length=500)
+    hps = models.CharField(max_length=500)
+
+    class Meta:
+        verbose_name = 'Lelang'
+        verbose_name_plural = 'Lelang'

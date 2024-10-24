@@ -1,8 +1,9 @@
 from django.db import models
 
 class Article(models.Model):
-    title = models.CharField(max_length=200)
-    link = models.URLField()
+    title = models.CharField(max_length=255)
+    link = models.URLField(max_length=500)
+    post_date = models.CharField(max_length=100)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

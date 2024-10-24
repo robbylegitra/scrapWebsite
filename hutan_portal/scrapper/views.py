@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from .models import Article
 from urllib.parse import urljoin
 from django.core.paginator import Paginator
 from django.shortcuts import render
@@ -7,44 +8,70 @@ from django.http import HttpResponse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+import threading
 import random
 import time
 import csv
 
-def scrape_articles(request):
+
+# Define a function to handle the scraping in a separate thread
+def scrape_data():
     base_url = 'https://plniconplus.co.id/e-proc/'
     total_articles = []
     articles_per_page = 20  # Number of articles per page
 
-    # Fetch articles from all pages
+    # Cek apakah ada data di database
+    articles_in_db = Article.objects.all()
+
+    if articles_in_db.exists():
+        for article in articles_in_db:
+            total_articles.append({'title': article.title, 'link': article.link, 'post_date': article.post_date})
+
     page_number = 1
     while True:
         url = f"{base_url}page/{page_number}/" if page_number > 1 else base_url
         response = requests.get(url)
 
         if response.status_code != 200:
-            break  # Stop if no more pages are available
+            break
 
         soup = BeautifulSoup(response.text, 'html.parser')
         post_list = soup.select_one('.post-list')
 
         if post_list:
-            # Get all h3 elements for unique articles
-            for item in post_list.find_all('article'):  # Assuming each article is wrapped in an <article> tag
+            for item in post_list.find_all('article'):
                 title = item.find('h3').text.strip()
                 link = item.find('a')['href']
                 full_link = urljoin(base_url, link)
-
-                # Extract post date - Adjust the selector as per the site's structure
                 post_date = item.find(class_='post__date').text.strip() if item.find(class_='post__date') else 'No date available'
 
-                # Ensure no duplicate articles
-                if full_link not in [article['link'] for article in total_articles]:
+                if not Article.objects.filter(link=full_link).exists():
+                    new_article = Article(title=title, link=full_link, post_date=post_date)
+                    new_article.save()
+                    total_articles.append({'title': title, 'link': full_link, 'post_date': post_date})
+                else:
                     total_articles.append({'title': title, 'link': full_link, 'post_date': post_date})
         else:
-            break  # Stop if no content found
+            break
 
-        page_number += 1  # Go to the next page
+        page_number += 1
+
+    # Here you can implement additional logic to handle the total_articles list,
+    # for example, saving them to the database or logging.
+
+def scrape_articles(request):
+    # Start the scraping in a separate thread
+    scraping_thread = threading.Thread(target=scrape_data)
+    scraping_thread.start()
+
+    # Prepare the articles for rendering
+    total_articles = []
+    articles_per_page = 20  # Number of articles per page
+
+    articles_in_db = Article.objects.all()
+    if articles_in_db.exists():
+        for article in articles_in_db:
+            total_articles.append({'title': article.title, 'link': article.link, 'post_date': article.post_date})
 
     # Check if the request is for CSV download
     if request.GET.get('download') == 'csv':
@@ -55,14 +82,14 @@ def scrape_articles(request):
         writer.writerow(['Title', 'Link', 'Post Date'])  # Write CSV header
 
         for article in total_articles:
-            writer.writerow([article['title'], article['link'], article['post_date']])  # Write each article
+            writer.writerow([article['title'], article['link'], article['post_date']])
 
         return response  # Return the CSV response
 
     # Create paginator
-    paginator = Paginator(total_articles, articles_per_page)  # 20 articles per page
-    page_number = request.GET.get('page')  # Get page number from query parameter
-    articles_page = paginator.get_page(page_number)  # Get articles for the page
+    paginator = Paginator(total_articles, articles_per_page)
+    page_number = request.GET.get('page')
+    articles_page = paginator.get_page(page_number)
 
     return render(request, 'scrapper/pln_icon_plus.html', {'articles': articles_page})
 

@@ -1,12 +1,11 @@
-version: '3.12'
-
 services:
   db:
     image: mariadb:latest
+    container_name: database
     restart: always
     environment:
       MYSQL_DATABASE: portal_pln
-      MYSQL_ROOT_PASSWORD: ''
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
     ports:
       - "3306:3306"
     volumes:
